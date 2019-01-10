@@ -4,6 +4,6 @@ workflow "New workflow" {
 }
 
 action "gofmt" {
-  uses = "martinxxD/go-github-actions/fmt@master"
+  uses = "martinxxD/go-github-actions/go@master"
   secrets = ["GITHUB_TOKEN"]
 }
