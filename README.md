@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/martinxxd/copyenv.svg?branch=master)](https://travis-ci.com/martinxxd/copyenv)
+
 # Cloud Foundry CLI Copy Env Plugin
 
 Cloud Foundry CLI plugin to export application VCAP_SERVICES and VCAP_APPLICATION.
