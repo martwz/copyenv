@@ -17,7 +17,7 @@ func (c *CopyEnv) retrieveAppNameEnv(cliConnection plugin.CliConnection, appName
 
 	apps, err := cliConnection.GetApps()
 	if err != nil {
-		msg := fmt.Sprintf("Failed to retrieve enviroment for \"%s\", is the app name correct?", appName)
+		msg := fmt.Sprintf("Failed to retrieve environment for \"%s\", is the app name correct?", appName)
 		err = errors.New(msg)
 	}
 
@@ -29,14 +29,14 @@ func (c *CopyEnv) retrieveAppNameEnv(cliConnection plugin.CliConnection, appName
 	}
 
 	if guid == "" {
-		msg := fmt.Sprintf("Failed to retrieve enviroment for \"%s\", is the app name correct?", appName)
+		msg := fmt.Sprintf("Failed to retrieve environment for \"%s\", is the app name correct?", appName)
 		err = errors.New(msg)
 	} else {
 		url := fmt.Sprintf("/v2/apps/%s/env", guid)
 		output, err := cliConnection.CliCommandWithoutTerminalOutput("curl", url)
 
 		if err != nil {
-			msg := fmt.Sprintf("Failed to retrieve enviroment for \"%s\", is the app name correct?", appName)
+			msg := fmt.Sprintf("Failed to retrieve environment for \"%s\", is the app name correct?", appName)
 			err = errors.New(msg)
 		}
 
@@ -68,28 +68,36 @@ func (c *CopyEnv) extractCredentialsJSON(envParent string, credKey string, outpu
 	return envJson, err
 }
 
-func (c *CopyEnv) extractAndExportCredentials(envParent string, credKey string, appEnv []string) {
+func (c *CopyEnv) extractAndExportCredentials(envParent string, credKey string, appEnv []string, plain bool) {
 	creds, err := c.extractCredentialsJSON(envParent, credKey, appEnv)
 	checkErr(err)
-	vcapServices := fmt.Sprintf("export %s='%s';", credKey, string(creds[:]))
+
+	vcapServices := ""
+	if !plain {
+		vcapServices = fmt.Sprintf("export %s='%s';", credKey, string(creds[:]))
+	} else {
+		vcapServices = fmt.Sprintf("%s", string(creds[:]))
+	}
 	fmt.Println(vcapServices)
 }
 
-func (c *CopyEnv) Run(cliConnection plugin.CliConnection, args []string) {
-	if len(args) < 2 {
-		checkErr(errors.New("Missing application name"))
+func (copy *CopyEnv) Run(cliConnection plugin.CliConnection, args []string) {
+	if args[0] != "CLI-MESSAGE-UNINSTALL" {
+		appName := args[1]
+
+		if len(args) < 1 {
+			checkErr(errors.New("Missing application name"))
+		}
+
+		appEnv, err := copy.retrieveAppNameEnv(cliConnection, appName)
+		checkErr(err)
+
+		if contains(args, "--all") {
+			copy.extractAndExportCredentials("application_env_json", "VCAP_APPLICATION", appEnv, contains(args, "--plain"))
+			fmt.Println("")
+		}
+		copy.extractAndExportCredentials("system_env_json", "VCAP_SERVICES", appEnv, contains(args, "--plain"))
 	}
-
-	appName := args[1]
-
-	appEnv, err := c.retrieveAppNameEnv(cliConnection, appName)
-	checkErr(err)
-
-	if len(args) > 2 && args[2] == "--all" {
-		c.extractAndExportCredentials("application_env_json", "VCAP_APPLICATION", appEnv)
-		fmt.Println("")
-	}
-	c.extractAndExportCredentials("system_env_json", "VCAP_SERVICES", appEnv)
 }
 
 func (c *CopyEnv) GetMetadata() plugin.PluginMetadata {
@@ -105,14 +113,24 @@ func (c *CopyEnv) GetMetadata() plugin.PluginMetadata {
 				Name:     "copyenv",
 				HelpText: "Export application VCAP_SERVICES.",
 				UsageDetails: plugin.Usage{
-					Usage: "copyenv APP_NAME [--all] - Retrieve and export remote application VCAP_SERVICES.",
+					Usage: "copyenv APP_NAME [--all] [--plain] - Retrieve and export remote application VCAP_SERVICES.",
 					Options: map[string]string{
-						"all": "Retrieve both VCAP_SERVICES and VCAP_APPLICATION from remote application",
+						"all":   "Retrieve both VCAP_SERVICES and VCAP_APPLICATION from remote application",
+						"plain": "Return plain JSON",
 					},
 				},
 			},
 		},
 	}
+}
+
+func contains(a []string, x string) bool {
+	for _, n := range a {
+		if x == n {
+			return true
+		}
+	}
+	return false
 }
 
 func checkErr(err error) {
