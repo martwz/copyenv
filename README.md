@@ -7,14 +7,14 @@ Cloud Foundry CLI plugin to export application VCAP_SERVICES and VCAP_APPLICATIO
 ## Install
 
 ```bash
-curl -L https://github.com/martinxxd/copyenv/releases/download/v1.0.0/copyenv_1.0.0_darwin_amd64.tar.gz | tar -zxvf copyenv
+curl -L https://github.com/martinxxd/copyenv/releases/download/v1.1.0/copyenv_1.1.0_darwin_amd64.tar.gz | tar -zxvf copyenv
 cf install-plugin copyenv
 ```
 
 ## Usage
 
 ```bash
-cf copyenv APP_NAME [--all]
+cf copyenv APP_NAME [--all] [--plain]
 
 export VCAP_SERVICES='...'
 ```
